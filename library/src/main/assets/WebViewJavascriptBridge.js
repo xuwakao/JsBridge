@@ -1,13 +1,11 @@
 //notation: js file can only use this kind of comments
 //since comments will cause error when use in webview.loadurl,
 //comments will be remove by java use regexp
-(function() {
+(function () {
     if (window.WebViewJavascriptBridge) {
         return;
     }
 
-    var messagingIframe;
-    var sendMessageQueue = [];
     var receiveMessageQueue = [];
     var messageHandlers = {};
 
@@ -18,6 +16,7 @@
     var uniqueId = 1;
 
     var base64encodechars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
     function base64encode(str) {
         if (str === undefined) {
             return str;
@@ -51,13 +50,6 @@
             out += base64encodechars.charAt(c3 & 0x3f);
         }
         return out;
-    }
-
-
-    function _createQueueReadyIframe(doc) {
-        messagingIframe = doc.createElement('iframe');
-        messagingIframe.style.display = 'none';
-        doc.documentElement.appendChild(messagingIframe);
     }
 
     function isAndroid() {
@@ -116,26 +108,22 @@
             message.callbackId = callbackId;
         }
 
-        sendMessageQueue.push(message);
-        messagingIframe.src = CUSTOM_PROTOCOL_SCHEME + '://' + QUEUE_HAS_MESSAGE;
-    }
-
-    // 提供给native调用,该函数作用:获取sendMessageQueue返回给native,由于android不能直接获取返回的内容,所以使用url shouldOverrideUrlLoading 的方式返回内容
-    function _fetchQueue() {
-        var messageQueueString = JSON.stringify(sendMessageQueue);
-        sendMessageQueue = [];
-        //add by hq
         if (isIphone()) {
-            return messageQueueString;
-            //android can't read directly the return data, so we can reload iframe src to communicate with java
+            //TODO
         } else if (isAndroid()) {
-            messagingIframe.src = CUSTOM_PROTOCOL_SCHEME + '://return/_fetchQueue/' + encodeURIComponent(messageQueueString);
+            var messageQueueString = JSON.stringify(message);
+            var retJson = window.jsBridgeObj.callFromJs(messageQueueString);
+            if (typeof console != 'undefined') {
+                console.log("send sync call ret =" + retJson);
+            }
+            if (retJson)
+                _dispatchMessageFromNative(retJson);
         }
     }
 
     //提供给native使用,
     function _dispatchMessageFromNative(messageJSON) {
-        setTimeout(function() {
+        setTimeout(function () {
             var message = JSON.parse(messageJSON);
             var responseCallback;
             //java call finished, now need to call js callback function
@@ -150,7 +138,7 @@
                 //直接发送
                 if (message.callbackId) {
                     var callbackResponseId = message.callbackId;
-                    responseCallback = function(responseData) {
+                    responseCallback = function (responseData) {
                         _doSend({
                             responseId: callbackResponseId,
                             responseData: responseData
@@ -177,6 +165,7 @@
     //提供给native调用,receiveMessageQueue 在会在页面加载完后赋值为null,所以
     function _handleMessageFromNative(messageJSON) {
         console.log(messageJSON);
+        //check whether initialization has finished
         if (receiveMessageQueue) {
             receiveMessageQueue.push(messageJSON);
         } else {
@@ -189,12 +178,10 @@
         send: send,
         registerHandler: registerHandler,
         callHandler: callHandler,
-        _fetchQueue: _fetchQueue,
         _handleMessageFromNative: _handleMessageFromNative
     };
 
     var doc = document;
-    _createQueueReadyIframe(doc);
     var readyEvent = doc.createEvent('Events');
     readyEvent.initEvent('WebViewJavascriptBridgeReady');
     readyEvent.bridge = WebViewJavascriptBridge;
