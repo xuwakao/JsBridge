@@ -11,10 +11,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.widget.Button;
 
-import com.github.lzyzsd.jsbridge.BridgeHandler;
-import com.github.lzyzsd.jsbridge.BridgeWebView;
-import com.github.lzyzsd.jsbridge.CallBackFunction;
-import com.github.lzyzsd.jsbridge.DefaultHandler;
+import com.github.lzyzsd.jsbridge.*;
 import com.google.gson.Gson;
 
 public class MainActivity extends Activity implements OnClickListener {
@@ -50,8 +47,6 @@ public class MainActivity extends Activity implements OnClickListener {
 
         button.setOnClickListener(this);
 
-        webView.setDefaultHandler(new DefaultHandler());
-
         webView.setWebChromeClient(new WebChromeClient() {
 
             @SuppressWarnings("unused")
@@ -72,15 +67,18 @@ public class MainActivity extends Activity implements OnClickListener {
 
         webView.loadUrl("file:///android_asset/demo.html");
 
-        webView.registerHandler("submitFromWeb", new BridgeHandler() {
-
+        webView.registerCallProcessor(0, new BridgeCallProcessor() {
             @Override
-            public String handler(String data, CallBackFunction function) {
-                Log.i(TAG, "handler = submitFromWeb, data from web = " + data);
-                function.onCallBack("submitFromWeb exe, response data 中文 from Java");
-                return "return data when js call submitFromWeb";
+            public void process(String data, CallBackFunction callback) {
+                callback.onCallBack(data);
             }
+        });
 
+        webView.registerFetchProcessor(0, new BridgeFetchProcessor() {
+            @Override
+            public String process(String data) {
+                return data;
+            }
         });
 
         User user = new User();
@@ -89,13 +87,14 @@ public class MainActivity extends Activity implements OnClickListener {
         user.location = location;
         user.name = "大头鬼";
 
-        webView.callHandler("functionInJs", new Gson().toJson(user), new CallBackFunction() {
+        webView.callJsHandler("functionInJs", new Gson().toJson(user), new CallBackFunction() {
             @Override
             public void onCallBack(String data) {
+                Log.d("", "oncallback data = " + data);
             }
         });
 
-        webView.send("hello");
+//        webView.send("hello");
 
     }
 
@@ -120,7 +119,7 @@ public class MainActivity extends Activity implements OnClickListener {
     @Override
     public void onClick(View v) {
         if (button.equals(v)) {
-            webView.callHandler("functionInJs", "data from Java", new CallBackFunction() {
+            webView.callJsHandler("functionInJs", "data from Java", new CallBackFunction() {
 
                 @Override
                 public void onCallBack(String data) {

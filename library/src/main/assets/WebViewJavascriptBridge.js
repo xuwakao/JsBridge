@@ -79,45 +79,31 @@
         var receivedMessages = receiveMessageQueue;
         receiveMessageQueue = null;
         for (var i = 0; i < receivedMessages.length; i++) {
-            _dispatchMessageFromNative(receivedMessages[i]);
+            onNativeRequest(receivedMessages[i].handlerName, receivedMessages[i].reqParam, receivedMessages[i].callbackId);
         }
-    }
-
-    function send(data, responseCallback) {
-        _doSend({
-            data: data
-        }, responseCallback);
     }
 
     function registerHandler(handlerName, handler) {
         messageHandlers[handlerName] = handler;
     }
 
-    function callHandler(handlerName, data, responseCallback) {
-        _doSend({
-            handlerName: handlerName,
-            data: data
-        }, responseCallback);
-    }
-
     //sendMessage add message, 触发native处理 sendMessage
-    function _doSend(message, responseCallback) {
+    function _doSend(protocol, param, responseCallback) {
         if (responseCallback) {
             var callbackId = 'cb_' + (uniqueId++) + '_' + new Date().getTime();
             responseCallbacks[callbackId] = responseCallback;
-            message.callbackId = callbackId;
         }
 
         if (isIphone()) {
             //TODO
         } else if (isAndroid()) {
-            var messageQueueString = JSON.stringify(message);
-            var retJson = window.jsBridgeObj.callFromJs(messageQueueString);
+            var messageQueueString = JSON.stringify(param);
+            var retJson = window.jsBridgeObj.jsCall(messageQueueString);
             if (typeof console != 'undefined') {
-                console.log("send sync call ret =" + retJson);
+                console.log("send sync call ret = " + retJson);
             }
-            if (retJson)
-                _dispatchMessageFromNative(retJson);
+            //if (retJson)
+            //    _dispatchMessageFromNative(retJson);
         }
     }
 
@@ -173,12 +159,95 @@
         }
     }
 
+    /////////////////////////////////////////////call native////////////////////////////////
+
+    //asynchronized method used to call native
+    function callNativeHandler(protocol, param, responseCallback) {
+        var callbackId;
+        if (responseCallback) {
+            callbackId = 'cb_' + (uniqueId++) + '_' + new Date().getTime();
+            responseCallbacks[callbackId] = responseCallback;
+        }
+        var paramJson = JSON.stringify(param);
+        window.jsBridgeObj.jsCall(protocol, paramJson, callbackId);
+    }
+
+    //synchronized method used to fetch data from native`
+    function fetchNativeData(protocol, param) {
+        if (isAndroid()) {
+            var messageQueueString = JSON.stringify(param);
+            var response = window.jsBridgeObj.jsFetchNative(protocol, messageQueueString);
+            if (typeof console != 'undefined') {
+                console.log("sync fetch data from native ret = " + response);
+            }
+            return response;
+        }
+    }
+
+    //send response data to native
+    function responseToNative(callbackId, responseData) {
+        window.jsBridgeObj.jsResponse(callbackId, responseData);
+    }
+
+    /////////////////////////////////////////////call native (---END---)////////////////////////////////
+
+    ///////////////////////////////////recv native request/response////////////////////////////
+    function onNativeResponse(responseId, responseData) {
+        if (typeof console != 'undefined') {
+            console.log("onNativeResponse responseId = " + responseId + ", responseData = " + responseData);
+        }
+        setTimeout(function () {
+            var responseCallback = responseCallbacks[responseId];
+            if (!responseCallback) {
+                return;
+            }
+            responseCallback(responseData);
+            delete responseCallbacks[responseId];
+        });
+    }
+
+    function onNativeRequest(handlerName, reqParam, callbackId) {
+        if (receiveMessageQueue) {
+            receiveMessageQueue.push({
+                handlerName: handlerName, reqParam: reqParam, callbackId: callbackId
+            })
+        } else {
+            setTimeout(function () {
+                //直接发送
+                var responseCallback;
+                if (callbackId) {
+                    var callbackResponseId = callbackId;
+                    responseCallback = function (responseData) {
+                        responseToNative(callbackResponseId, responseData);
+                    };
+                }
+
+                var handler = WebViewJavascriptBridge._messageHandler;
+                if (handlerName) {
+                    handler = messageHandlers[handlerName];
+                }
+                //查找指定handler
+                try {
+                    handler(reqParam, responseCallback);
+                } catch (exception) {
+                    if (typeof console != 'undefined') {
+                        console.log("WebViewJavascriptBridge: WARNING: javascript handler threw.", message, exception);
+                    }
+                }
+            });
+        }
+    }
+
+    ///////////////////////////////////recv native request/response (---END---)////////////////////////////
+
     var WebViewJavascriptBridge = window.WebViewJavascriptBridge = {
         init: init,
-        send: send,
         registerHandler: registerHandler,
-        callHandler: callHandler,
-        _handleMessageFromNative: _handleMessageFromNative
+        _handleMessageFromNative: _handleMessageFromNative,
+        callHandler: callNativeHandler,
+        fetchNativeData: fetchNativeData,
+        onNativeResponse: onNativeResponse,
+        onNativeRequest: onNativeRequest
     };
 
     var doc = document;

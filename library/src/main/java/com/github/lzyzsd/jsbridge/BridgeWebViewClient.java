@@ -6,7 +6,7 @@ import android.webkit.WebViewClient;
 /**
  * Created by bruce on 10/28/15.
  */
-public class BridgeWebViewClient extends WebViewClient implements IBridgeClient {
+public class BridgeWebViewClient extends WebViewClient implements IBridgeJsClient {
     private static final String JS_BRIDGE_OBJ = "jsBridgeObj";
 
     private BridgeWebView webView;
@@ -25,7 +25,6 @@ public class BridgeWebViewClient extends WebViewClient implements IBridgeClient 
             BridgeUtil.webViewLoadLocalJs(view, BridgeWebView.toLoadJs);
         }
 
-        //
         if (webView.getStartupMessage() != null) {
             for (Message m : webView.getStartupMessage()) {
                 webView.dispatchMessage(m);
@@ -35,7 +34,17 @@ public class BridgeWebViewClient extends WebViewClient implements IBridgeClient 
     }
 
     @Override
-    public String onRecvMsgFromJs(String message) {
-        return webView.recvMsgFromJs(message);
+    public void onJsCall(int protocol, String jsonParam, String jsCallback) {
+        webView.onJsCall(protocol, jsonParam, jsCallback);
+    }
+
+    @Override
+    public String onJsFetch(int protocol, String jsonParam) {
+        return webView.onJsFetch(protocol, jsonParam);
+    }
+
+    @Override
+    public void onJsResponse(String responseId, String responseData) {
+        webView.onJsResponse(responseId, responseData);
     }
 }
