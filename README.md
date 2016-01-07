@@ -12,8 +12,8 @@ This project make a bridge between Java and JavaScript.
 
 ++ Provide sychronized and asychronized method to call from js
 
-## Demo
-![JsBridge Demo](https://raw.githubusercontent.com/lzyzsd/JsBridge/master/JsBridge.gif)
+<!--## Demo-->
+<!--![JsBridge Demo](https://raw.githubusercontent.com/lzyzsd/JsBridge/master/JsBridge.gif)-->
 
 ## Usage
 
