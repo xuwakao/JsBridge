@@ -120,13 +120,11 @@ public class MainActivity extends Activity implements OnClickListener {
     public void onClick(View v) {
         if (button.equals(v)) {
             webView.callJsHandler("functionInJs", "data from Java", new CallBackFunction() {
-
                 @Override
                 public void onCallBack(String data) {
                     // TODO Auto-generated method stub
                     Log.i(TAG, "reponse data from js " + data);
                 }
-
             });
         }
 

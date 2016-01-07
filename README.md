@@ -1,93 +1,70 @@
 #JsBridge
 
 -----
+##Description
 
-inspired and modified from [this](https://github.com/jacin1/JsBridge) and wechat jsBridge file, with some bugs fix and feature enhancement.
+Enhanced version of [JsBridge](https://github.com/lzyzsd/JsBridge).
 
+## Support
 This project make a bridge between Java and JavaScript.
 
-It provides safe and convenient way to call Java code from js and call js code from java.
+++Provides safe and convenient way to call Java code from js and call js code from java.
+++Provide sychronized and asychronized method to call from js
 
 ## Demo
 ![JsBridge Demo](https://raw.githubusercontent.com/lzyzsd/JsBridge/master/JsBridge.gif)
 
 ## Usage
 
-## JitPack.io
-
-I strongly recommend https://jitpack.io
-
-```groovy
-repositories {
-    // ...
-    maven { url "https://jitpack.io" }
-}
-
-dependencies {
-    compile 'com.github.lzyzsd:jsbridge:1.0.4'
-}
-```
-
 ## Use it in Java
 
 add com.github.lzyzsd.BridgeWebView to your layout, it is inherited from WebView.
 
-### Register a Java handler function so that js can call
+### Register a Java processor function so that js can call
 
 ```java
-
-    webView.registerHandler("submitFromWeb", new BridgeHandler() {
-        @Override
-        public void handler(String data, CallBackFunction function) {
-            Log.i(TAG, "handler = submitFromWeb, data from web = " + data);
-            function.onCallBack("submitFromWeb exe, response data from Java");
-        }
-    });
+            ----------register sychronized processor-------------
+            webView.registerCallProcessor(0, new BridgeCallProcessor() {
+                @Override
+                public void process(String data, CallBackFunction callback) {
+                    callback.onCallBack(data);
+                }
+            });
+    
+            -----------register asychronized processor-------------
+            webView.registerFetchProcessor(0, new BridgeFetchProcessor() {
+                @Override
+                public String process(String data) {
+                    return data;
+                }
+            });
 
 ```
 
-js can call this Java handler method "submitFromWeb" through:
+js can call this Java through:
 
 ```javascript
 
-    WebViewJavascriptBridge.callHandler(
-        'submitFromWeb'
-        , {'param': str1}
-        , function(responseData) {
-            document.getElementById("show").innerHTML = "send get responseData from java, data = " + responseData
-        }
-    );
-
-```
-
-You can set a default handler in Java, so that js can send message to Java without assigned handlerName
-
-```java
-
-    webView.setDefaultHandler(new DefaultHandler());
-
-```
-
-```javascript
-
-    window.WebViewJavascriptBridge.send(
-        data
-        , function(responseData) {
-            document.getElementById("show").innerHTML = "repsonseData from java, data = " + responseData
-        }
-    );
+        -----------synchronized fetch data from native-------------
+        var response = window.WebViewJavascriptBridge.fetchNativeData(0, data);
+        
+        -----------asynchronized call java handler-------------
+        window.WebViewJavascriptBridge.callHandler(0
+                , {'param': 'processor测试'}
+                , function (responseData) {
+                    document.getElementById("show").innerHTML = "send get responseData from java, data = " + responseData;
+                }
 
 ```
 
 ### Register a JavaScript handler function so that Java can call
 
 ```javascript
-
-    WebViewJavascriptBridge.registerHandler("functionInJs", function(data, responseCallback) {
-        document.getElementById("show").innerHTML = ("data from Java: = " + data);
-        var responseData = "Javascript Says Right back aka!";
-        responseCallback(responseData);
-    });
+            WebViewJavascriptBridge.registerHandler("functionInJs", function (data, responseCallback) {
+                document.getElementById("show").innerHTML = ("data from Java: = " + data);
+                var responseData = "Javascript Says Right back aka!";
+                responseCallback(responseData);
+            });
 
 ```
 
@@ -95,12 +72,12 @@ Java can call this js handler function "functionInJs" through:
 
 ```java
 
-    webView.callHandler("functionInJs", new Gson().toJson(user), new CallBackFunction() {
-        @Override
-        public void onCallBack(String data) {
-
-        }
-    });
+        webView.callJsHandler("functionInJs", new Gson().toJson(user), new CallBackFunction() {
+            @Override
+            public void onCallBack(String data) {
+                Log.d("", "oncallback data = " + data);
+            }
+        });
 
 ```
 You can also define a default handler use init method, so that Java can send message to js without assigned handlerName
