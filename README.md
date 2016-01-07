@@ -8,8 +8,9 @@ Enhanced version of [JsBridge](https://github.com/lzyzsd/JsBridge).
 ## Support
 This project make a bridge between Java and JavaScript.
 
-++Provides safe and convenient way to call Java code from js and call js code from java.
-++Provide sychronized and asychronized method to call from js
+++ Provides safe and convenient way to call Java code from js and call js code from java.
+
+++ Provide sychronized and asychronized method to call from js
 
 ## Demo
 ![JsBridge Demo](https://raw.githubusercontent.com/lzyzsd/JsBridge/master/JsBridge.gif)
