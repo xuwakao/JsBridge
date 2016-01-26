@@ -24,7 +24,7 @@ add com.github.lzyzsd.BridgeWebView to your layout, it is inherited from WebView
 ### Register a Java processor function so that js can call
 
 ```java
-            ----------register sychronized processor-------------
+            ----------register asychronized processor-------------
             webView.registerCallProcessor(0, new BridgeCallProcessor() {
                 @Override
                 public void process(String data, CallBackFunction callback) {
@@ -32,7 +32,7 @@ add com.github.lzyzsd.BridgeWebView to your layout, it is inherited from WebView
                 }
             });
     
-            -----------register asychronized processor-------------
+            -----------register sychronized processor-------------
             webView.registerFetchProcessor(0, new BridgeFetchProcessor() {
                 @Override
                 public String process(String data) {
